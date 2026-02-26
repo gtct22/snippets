@@ -1,0 +1,44 @@
+parameters:
+  - name: artifactName
+    type: string
+  - name: environment
+    type: string
+    values:
+      - dev
+      - tst
+      - uat
+      - prd
+  - name: region
+    type: string
+    values:
+      - ne
+      - we
+
+stages:
+  - stage: Build
+    jobs:
+      - job: Build
+        displayName: Build the database project
+        pool: vmscaleset-${{ parameters.region }}-adt-${{ parameters.environment }}-agentpool
+        steps:
+          - checkout: self
+
+          - task: DotNetCoreCLI@2
+            displayName: Build database project
+            inputs:
+              command: build
+              projects: '**/Workday.Database.sqlproj'
+              arguments: '--configuration Release'
+
+          - task: CopyFiles@2
+            displayName: Copy dacpac to staging
+            inputs:
+              SourceFolder: '$(Build.SourcesDirectory)/database/Workday.Database/bin/Release'
+              Contents: '*.dacpac'
+              TargetFolder: '$(Build.StagingDirectory)/${{ parameters.artifactName }}'
+
+          - task: PublishBuildArtifacts@1
+            displayName: Publish artifacts
+            inputs:
+              PathtoPublish: '$(Build.StagingDirectory)/${{ parameters.artifactName }}'
+              ArtifactName: ${{ parameters.artifactName }}
