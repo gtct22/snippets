@@ -1,0 +1,68 @@
+parameters:
+  - name: environment
+    type: string
+    values:
+      - dev
+      - tst
+      - uat
+      - prd
+  - name: region
+    type: string
+    values:
+      - ne
+      - we
+  - name: artifactName
+    type: string
+
+stages:
+  - ${{ if ne(variables['Build.Reason'], 'PullRequest') }}:
+    - stage: ${{ parameters.environment }}
+      displayName: "${{ parameters.environment }} : Deploy the database"
+      jobs:
+        - job: waitForApproval
+          displayName: Approve deployment for ${{ parameters.environment }} environment
+          pool: server
+          timeoutInMinutes: 10080
+          steps:
+            - task: ManualValidation@0
+              displayName: Reject or resume
+              timeoutInMinutes: 10080
+              inputs:
+                instructions: Approve deployment for ${{ parameters.environment }} environment
+                onTimeout: reject
+
+        - deployment: Deploy
+          displayName: Deploy Workday Database
+          dependsOn:
+            - waitForApproval
+          pool: vmscaleset-${{ parameters.region }}-adt-${{ parameters.environment }}-agentpool
+          environment: ${{ parameters.environment }}
+          strategy:
+            runOnce:
+              deploy:
+                steps:
+                  - task: DownloadPipelineArtifact@2
+                    displayName: Download dacpac
+                    inputs:
+                      buildType: current
+                      artifactName: ${{ parameters.artifactName }}
+                      targetPath: '$(System.DefaultWorkingDirectory)/${{ parameters.artifactName }}'
+
+                  - task: AzureKeyVault@2
+                    displayName: Get connection string from Key Vault
+                    inputs:
+                      azureSubscription: ${{ if eq(parameters.environment, 'prd') }}:
+                        sp-adt-azdevops-agent-prd
+                      ${{ else }}:
+                        sp-adt-azdevops-agent-dev
+                      KeyVaultName: kv-${{ parameters.region }}-adt-${{ parameters.environment }}
+                      SecretsFilter: 'WorkdayDatabase--ConnectionString'
+                      RunAsPreJob: false
+
+                  - task: SqlAzureDacpacDeployment@1
+                    displayName: Deploy dacpac to SQL Server
+                    inputs:
+                      deployType: DacpacTask
+                      dacpacFile: '$(System.DefaultWorkingDirectory)/${{ parameters.artifactName }}/Workday.Database.dacpac'
+                      AuthenticationType: connectionString
+                      ConnectionString: $(WorkdayDatabase--ConnectionString)
