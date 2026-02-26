@@ -1,0 +1,42 @@
+trigger:
+  branches:
+    include:
+      - '*'
+  tags:
+    include:
+      - '*'
+
+variables:
+  - name: ArtifactName
+    value: Workday.Database
+
+stages:
+  - template: database-build.yml
+    parameters:
+      region: ne
+      environment: dev
+      artifactName: $(ArtifactName)
+
+  - template: database-deploy.yml
+    parameters:
+      environment: dev
+      region: ne
+      artifactName: $(ArtifactName)
+
+  - template: database-deploy.yml
+    parameters:
+      environment: tst
+      region: ne
+      artifactName: $(ArtifactName)
+
+  - template: database-deploy.yml
+    parameters:
+      environment: uat
+      region: ne
+      artifactName: $(ArtifactName)
+
+  - template: database-deploy.yml
+    parameters:
+      environment: prd
+      region: ne
+      artifactName: $(ArtifactName)
