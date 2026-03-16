@@ -46,7 +46,7 @@ stages:
                     inputs:
                       buildType: current
                       artifactName: ${{ parameters.artifactName }}
-                      targetPath: '$(System.DefaultWorkingDirectory)/${{ parameters.artifactName }}'
+                      targetPath: '$(System.DefaultWorkingDirectory)\${{ parameters.artifactName }}'
 
                   - task: AzureKeyVault@2
                     displayName: Get connection string from Key Vault
@@ -55,14 +55,12 @@ stages:
                         sp-adt-azdevops-agent-prd
                       ${{ else }}:
                         sp-adt-azdevops-agent-dev
-                      KeyVaultName: kv-${{ parameters.region }}-adt-${{ parameters.environment }}
-                      SecretsFilter: 'WorkdayDatabase--ConnectionString'
+                      KeyVaultName: kv-${{ parameters.region }}adt${{ parameters.environment }}common
+                      SecretsFilter: 'workday-workday-functions-conn-string'
                       RunAsPreJob: false
 
-                  - task: SqlAzureDacpacDeployment@1
+                  - task: CmdLine@2
                     displayName: Deploy dacpac to SQL Server
                     inputs:
-                      deployType: DacpacTask
-                      dacpacFile: '$(System.DefaultWorkingDirectory)/${{ parameters.artifactName }}/Workday.Database.dacpac'
-                      AuthenticationType: connectionString
-                      ConnectionString: $(WorkdayDatabase--ConnectionString)
+                      script: |
+                        sqlpackage /Action:Publish /SourceFile:"$(System.DefaultWorkingDirectory)\${{ parameters.artifactName }}\Workday.Database.dacpac" /TargetConnectionString:"$(workday-workday-functions-conn-string)"
