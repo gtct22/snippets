@@ -68,4 +68,4 @@ stages:
                     displayName: Deploy dacpac to SQL Server
                     inputs:
                       script: |
-                        sqlpackage /Action:Publish /SourceFile:"$(System.DefaultWorkingDirectory)\${{ parameters.artifactName }}\Workday.Database.dacpac" /TargetConnectionString:"$(workday-workday-functions-conn-string)"
+                        "%USERPROFILE%\.dotnet\tools\sqlpackage" /Action:Publish /SourceFile:"$(System.DefaultWorkingDirectory)\${{ parameters.artifactName }}\Workday.Database.dacpac" /TargetConnectionString:"$(workday-workday-functions-conn-string)"
