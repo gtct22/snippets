@@ -64,6 +64,12 @@ stages:
                       script: |
                         dotnet tool install -g microsoft.sqlpackage
                         echo "##vso[task.prependpath]$(Agent.HomeDirectory)/.dotnet/tools"
+                        - task: CmdLine@2
+                    displayName: Find SqlPackage
+                    inputs:
+                      script: |
+                        where sqlpackage
+                        dir "%USERPROFILE%\.dotnet\tools" /b
                   - task: CmdLine@2
                     displayName: Deploy dacpac to SQL Server
                     inputs:
