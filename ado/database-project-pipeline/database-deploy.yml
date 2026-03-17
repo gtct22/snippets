@@ -58,18 +58,18 @@ stages:
                       KeyVaultName: kv-${{ parameters.region }}adt${{ parameters.environment }}common
                       SecretsFilter: 'workday-workday-functions-conn-string'
                       RunAsPreJob: false
+- task: CmdLine@2
+                    displayName: Find SqlPackage
+                    inputs:
+                      script: |
+                        echo %USERPROFILE%
+                        dir "%USERPROFILE%\.dotnet\tools" /b
+                        where /r C:\Users sqlpackage.exe
                     - task: CmdLine@2
                     displayName: Install SqlPackage
                     inputs:
                       script: |
-                        dotnet tool install -g microsoft.sqlpackage
-                        echo "##vso[task.prependpath]$(Agent.HomeDirectory)/.dotnet/tools"
-                        - task: CmdLine@2
-                    displayName: Find SqlPackage
-                    inputs:
-                      script: |
-                        where sqlpackage
-                        dir "%USERPROFILE%\.dotnet\tools" /b
+                        dotnet tool install -g microsoft.sqlpackage || dotnet tool update -g microsoft.sqlpackage
                   - task: CmdLine@2
                     displayName: Deploy dacpac to SQL Server
                     inputs:
